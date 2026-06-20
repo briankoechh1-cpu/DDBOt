@@ -1,0 +1,16 @@
+{
+    "buildCommand": "NAPI_RS_NATIVE_LIBRARY_PATH=./node_modules/@rspack/binding-linux-x64-gnu/rspack.linux-x64-gnu.node npm run build",
+    "outputDirectory": "dist",
+    "rewrites": [
+        { "source": "/(.*)", "destination": "/index.html" }
+    ],
+    "headers": [
+        {
+            "source": "/(.*)",
+            "headers": [
+                { "key": "Cross-Origin-Opener-Policy", "value": "unsafe-none" },
+                { "key": "Cross-Origin-Embedder-Policy", "value": "unsafe-none" }
+            ]
+        }
+    ]
+}

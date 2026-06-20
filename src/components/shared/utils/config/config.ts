@@ -41,6 +41,7 @@ export const isTestLink = () => {
         window.location.origin?.includes('.replit.dev') ||
         window.location.origin?.includes('.replit.app') ||
         window.location.origin?.includes('.repl.co') ||
+        window.location.origin?.includes('.vercel.app') ||
         isLocal()
     );
 };
