@@ -23,6 +23,7 @@ export const domain_app_ids: Record<string, string | number> = {
     'dbot.deriv.com': APP_IDS.PRODUCTION,
     'dbot.deriv.be': APP_IDS.PRODUCTION_BE,
     'dbot.deriv.me': APP_IDS.PRODUCTION_ME,
+    'ddb-ot-orpin.vercel.app': '33y32fFBvxgod1B5Kb9zK',
     'eliakim-trading-site-com-4y76.vercel.app': '33yjzVFBvxegoDiBsKb9K',
 };
 
