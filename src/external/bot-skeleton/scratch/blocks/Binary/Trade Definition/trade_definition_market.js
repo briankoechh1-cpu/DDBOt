@@ -96,7 +96,9 @@ window.Blockly.Blocks.trade_definition_market = {
                 });
             } else if (event.name === 'SYMBOL_LIST') {
                 const new_symbol = symbol_dropdown.getValue();
-                DBotStore.instance.dashboard.setBotBuilderSymbol(new_symbol);
+                if (DBotStore.instance) {
+                    DBotStore.instance.dashboard.setBotBuilderSymbol(new_symbol);
+                }
             }
         } else if (
             event.type === window.Blockly.Events.BLOCK_DRAG &&

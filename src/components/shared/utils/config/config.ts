@@ -177,19 +177,24 @@ export const generateOAuthURL = () => {
     ) {
         original_url.hostname = configured_server_url;
     } else if (original_url.hostname.includes('oauth.deriv.')) {
-        // Second priority: Domain-based OAuth URL setting for .me and .be domains
+        // Only remap the OAuth subdomain for known Deriv TLDs (.com / .me / .be).
+        // Custom domains (e.g. *.vercel.app) must always use oauth.deriv.com.
         if (hostname.includes('.deriv.me')) {
             original_url.hostname = 'oauth.deriv.me';
         } else if (hostname.includes('.deriv.be')) {
             original_url.hostname = 'oauth.deriv.be';
-        } else {
-            // Fallback to original logic for other domains
-            const current_domain = getCurrentProductionDomain();
-            if (current_domain) {
-                const domain_suffix = current_domain.replace(/^[^.]+\./, '');
-                original_url.hostname = `oauth.${domain_suffix}`;
-            }
+        } else if (hostname.includes('.deriv.com')) {
+            original_url.hostname = 'oauth.deriv.com';
         }
+        // For any other domain (vercel.app, replit.dev, etc.) leave oauth.deriv.com as-is.
     }
+
+    // Always inject the correct app_id for the current domain so that the OAuth
+    // server recognises the registered redirect URL (e.g. elitradingsite.vercel.app).
+    const correct_app_id = getAppId();
+    if (correct_app_id) {
+        original_url.searchParams.set('app_id', String(correct_app_id));
+    }
+
     return original_url.toString() || oauth_url;
 };

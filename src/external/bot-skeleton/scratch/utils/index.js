@@ -768,6 +768,7 @@ export const appendCollapsedProcedureBlocksFields = instance => {
 };
 
 export const setCurrency = block_instance => {
+    if (!DBotStore.instance) return;
     const currency_field = block_instance.getField('CURRENCY_LIST');
     const { currency } = DBotStore.instance.client;
     currency_field?.setValue(getCurrencyDisplayCode(currency));
