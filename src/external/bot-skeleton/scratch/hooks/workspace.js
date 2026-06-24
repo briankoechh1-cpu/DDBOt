@@ -10,10 +10,11 @@ window.Blockly.Workspace.prototype.clearUndo = function () {
     this.undoStack_.length = 0;
     this.redoStack_.length = 0;
 
-    const { toolbar } = DBotStore.instance;
-
-    toolbar.setHasRedoStack();
-    toolbar.setHasUndoStack();
+    if (DBotStore.instance) {
+        const { toolbar } = DBotStore.instance;
+        toolbar.setHasRedoStack();
+        toolbar.setHasUndoStack();
+    }
 
     // Stop any events already in the firing queue from being undoable.
     window.Blockly.Events.clearPendingUndo();
@@ -33,10 +34,11 @@ window.Blockly.Workspace.prototype.fireChangeListener = function (event) {
             this.undoStack_.unshift();
         }
 
-        const { toolbar } = DBotStore.instance;
-
-        toolbar.setHasRedoStack();
-        toolbar.setHasUndoStack();
+        if (DBotStore.instance) {
+            const { toolbar } = DBotStore.instance;
+            toolbar.setHasRedoStack();
+            toolbar.setHasUndoStack();
+        }
     }
 
     // Copy listeners in case a listener attaches/detaches itself.
