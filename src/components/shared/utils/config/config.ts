@@ -25,6 +25,7 @@ export const domain_app_ids: Record<string, string | number> = {
     'dbot.deriv.me': APP_IDS.PRODUCTION_ME,
     'ddb-ot-orpin.vercel.app': '33y32fFBvxgod1B5Kb9zK',
     'eliakim-trading-site-com-4y76.vercel.app': '33yjzVFBvxegoDiBsKb9K',
+    'elitradingsite.vercel.app': '33E5cSHjp6JwZDugdKGGq',
 };
 
 export const getCurrentProductionDomain = () =>
