@@ -24,14 +24,39 @@ export const domain_app_ids: Record<string, string | number> = {
     'dbot.deriv.be': APP_IDS.PRODUCTION_BE,
     'dbot.deriv.me': APP_IDS.PRODUCTION_ME,
     // NOTE: custom Vercel domains (e.g. elitradingsite.vercel.app) intentionally have
-    // no entry here. The values previously registered for them ('33E5cSHjp6JwZDugdKGGq'
-    // and similar) were NOT valid Deriv API app IDs (Deriv app IDs are numeric, e.g.
-    // 36300, 65555) — using them broke the WebSocket connection (app_id is rejected by
-    // ws.derivws.com) which left the app stuck on the loading spinner forever.
+    // no entry here. Deriv's newer alphanumeric "Registered app" IDs (e.g.
+    // '33E5cSHjp6JwZDugdKGGq') are OAuth/OIDC-login-only — Deriv's own WebSocket API
+    // rejects them with "InvalidAppID". Using one here would break the WebSocket
+    // connection and leave the app stuck loading forever.
     // Without an entry here, these domains fall through to isTestLink() below, which
-    // uses the numeric dev app_id (36300) and works correctly for demo/testing.
-    // If you register a real Deriv app (numeric ID) with the redirect URL
-    // https://<your-domain>/callback, add it here as: '<your-domain>': <numeric_app_id>.
+    // uses the numeric dev app_id (36300) and works correctly for the trading API.
+    // Their OAuth-only app IDs are registered separately below in domain_oauth_app_ids.
+    // If you register a numeric "Legacy app ID" (works for both login and trading, like
+    // dbot.deriv.com's 65555) with redirect URL https://<your-domain>/callback, add it
+    // here instead as: '<your-domain>': <numeric_app_id>, and remove the entry from
+    // domain_oauth_app_ids below.
+};
+
+// Alphanumeric Deriv "Registered app" IDs (OAuth/OIDC login only — NOT valid for the
+// WebSocket trading API, see note above). Used exclusively to make the OIDC login
+// flow (requestOidcAuthentication) redirect back to the correct custom domain.
+export const domain_oauth_app_ids: Record<string, string> = {
+    'elitradingsite.vercel.app': '33E5cSHjp6JwZDugdKGGq',
+    'ddb-ot-orpin.vercel.app': '33y32fFBvxgod1B5Kb9zK',
+    'eliakim-trading-site-com-4y76.vercel.app': '33yjzVFBvxegoDiBsKb9K',
+};
+
+// Ensures the OIDC login library (@deriv-com/auth-client) picks up the correct
+// domain-specific OAuth app ID. That library reads its client_id from the same
+// localStorage key ('config.app_id') that our own getAppId() checks — but getAppId()
+// (used for the WebSocket API) ignores non-numeric values here, so this is safe to set
+// without breaking the trading connection. Call this before any requestOidcAuthentication
+// / OAuth2Logout call.
+export const ensureOAuthAppId = () => {
+    const oauth_app_id = domain_oauth_app_ids[window.location.hostname];
+    if (oauth_app_id) {
+        window.localStorage.setItem('config.app_id', oauth_app_id);
+    }
 };
 
 export const getCurrentProductionDomain = () =>
@@ -101,7 +126,10 @@ export const getAppId = () => {
     const config_app_id = window.localStorage.getItem('config.app_id');
     const current_domain = getCurrentProductionDomain() ?? '';
 
-    if (config_app_id) {
+    // Only trust a purely numeric override here — the WebSocket trading API rejects
+    // alphanumeric "Registered app" IDs (see domain_oauth_app_ids above). A non-numeric
+    // value in this key means ensureOAuthAppId() set it for the OIDC login flow only.
+    if (config_app_id && /^\d+$/.test(config_app_id)) {
         app_id = config_app_id;
     } else if (isStaging()) {
         app_id = APP_IDS.STAGING;
@@ -197,7 +225,9 @@ export const generateOAuthURL = () => {
 
     // Always inject the correct app_id for the current domain so that the OAuth
     // server recognises the registered redirect URL (e.g. elitradingsite.vercel.app).
-    const correct_app_id = getAppId();
+    // Prefer the domain's alphanumeric OAuth-only app ID (see domain_oauth_app_ids)
+    // over getAppId(), which is scoped to the numeric WebSocket-safe app ID.
+    const correct_app_id = domain_oauth_app_ids[hostname] || getAppId();
     if (correct_app_id) {
         original_url.searchParams.set('app_id', String(correct_app_id));
     }

@@ -4,6 +4,7 @@ import { observer } from 'mobx-react-lite';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ChunkLoader from '@/components/loader/chunk-loader';
 import { generateOAuthURL } from '@/components/shared';
+import { ensureOAuthAppId } from '@/components/shared/utils/config/config';
 import DesktopWrapper from '@/components/shared_ui/desktop-wrapper';
 import Dialog from '@/components/shared_ui/dialog';
 import MobileWrapper from '@/components/shared_ui/mobile-wrapper';
@@ -246,6 +247,7 @@ const AppWrapper = observer(() => {
                     await onRenderTMBCheck();
                 } else {
                     try {
+                        ensureOAuthAppId();
                         await requestOidcAuthentication({
                             redirectCallbackUri: `${window.location.origin}/callback`,
                             ...(query_param_currency

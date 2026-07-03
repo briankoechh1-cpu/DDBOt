@@ -2,3 +2,4 @@
 - [Sass-embedded broken on Replit](sass-embedded-fix.md) — sass-embedded dart binary crashes (Bus error); use `implementation: require('sass')` in sassLoaderOptions instead.
 - [Partial npm install workaround](npm-install-partial.md) — npm install leaves broken empty package shells on Replit; fix by manually downloading tarballs from npm registry and copying into node_modules.
 - [Deriv API app_id fix for Replit](deriv-api-app-id-fix.md) — production app_id (65555) is domain-restricted to dbot.deriv.com; add Replit domains to isTestLink() to use dev app_id (36300) instead.
+- [Deriv dual app-ID architecture](deriv-dual-app-id-architecture.md) — alphanumeric OAuth app IDs and numeric WebSocket app IDs are incompatible; must be handled via separate maps + a shared-key trick.
