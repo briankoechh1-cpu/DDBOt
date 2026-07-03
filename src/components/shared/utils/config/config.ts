@@ -23,9 +23,15 @@ export const domain_app_ids: Record<string, string | number> = {
     'dbot.deriv.com': APP_IDS.PRODUCTION,
     'dbot.deriv.be': APP_IDS.PRODUCTION_BE,
     'dbot.deriv.me': APP_IDS.PRODUCTION_ME,
-    'ddb-ot-orpin.vercel.app': '33y32fFBvxgod1B5Kb9zK',
-    'eliakim-trading-site-com-4y76.vercel.app': '33yjzVFBvxegoDiBsKb9K',
-    'elitradingsite.vercel.app': '33E5cSHjp6JwZDugdKGGq',
+    // NOTE: custom Vercel domains (e.g. elitradingsite.vercel.app) intentionally have
+    // no entry here. The values previously registered for them ('33E5cSHjp6JwZDugdKGGq'
+    // and similar) were NOT valid Deriv API app IDs (Deriv app IDs are numeric, e.g.
+    // 36300, 65555) — using them broke the WebSocket connection (app_id is rejected by
+    // ws.derivws.com) which left the app stuck on the loading spinner forever.
+    // Without an entry here, these domains fall through to isTestLink() below, which
+    // uses the numeric dev app_id (36300) and works correctly for demo/testing.
+    // If you register a real Deriv app (numeric ID) with the redirect URL
+    // https://<your-domain>/callback, add it here as: '<your-domain>': <numeric_app_id>.
 };
 
 export const getCurrentProductionDomain = () =>
