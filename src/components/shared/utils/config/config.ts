@@ -23,44 +23,63 @@ export const domain_app_ids: Record<string, string | number> = {
     'dbot.deriv.com': APP_IDS.PRODUCTION,
     'dbot.deriv.be': APP_IDS.PRODUCTION_BE,
     'dbot.deriv.me': APP_IDS.PRODUCTION_ME,
-    // NOTE: custom Vercel domains (e.g. elitradingsite.vercel.app) intentionally have
-    // no entry here. Deriv's newer alphanumeric "Registered app" IDs (e.g.
-    // '33E5cSHjp6JwZDugdKGGq') are OAuth/OIDC-login-only — Deriv's own WebSocket API
-    // rejects them with "InvalidAppID". Using one here would break the WebSocket
-    // connection and leave the app stuck loading forever.
-    // Without an entry here, these domains fall through to isTestLink() below, which
-    // uses the numeric dev app_id (36300) and works correctly for the trading API.
-    // Their OAuth-only app IDs are registered separately below in domain_oauth_app_ids.
-    // If you register a numeric "Legacy app ID" (works for both login and trading, like
-    // dbot.deriv.com's 65555) with redirect URL https://<your-domain>/callback, add it
-    // here instead as: '<your-domain>': <numeric_app_id>, and remove the entry from
-    // domain_oauth_app_ids below.
+    // NOTE: custom domains (e.g. elitradingsite.vercel.app) get their numeric app ID
+    // from custom_domain_app_ids below (or a ?app_id= URL override). Without an entry,
+    // they fall through to isTestLink() below, which uses the numeric dev app_id (36300)
+    // — that works for the WebSocket trading API but NOT for OAuth login redirects,
+    // because Deriv redirects to the URL registered for the app ID used at login.
 };
 
-// Alphanumeric Deriv "Registered app" IDs (OAuth/OIDC login only — NOT valid for the
-// WebSocket trading API, see note above). Used exclusively to make the OIDC login
-// flow (requestOidcAuthentication) redirect back to the correct custom domain.
-export const domain_oauth_app_ids: Record<string, string> = {
-    'elitradingsite.vercel.app': '33E5cSHjp6JwZDugdKGGq',
-    'ddb-ot-orpin.vercel.app': '33y32fFBvxgod1B5Kb9zK',
-    'eliakim-trading-site-com-4y76.vercel.app': '33yjzVFBvxegoDiBsKb9K',
-};
-
-// Ensures the OIDC login library (@deriv-com/auth-client) picks up the correct
-// domain-specific OAuth app ID. That library reads its client_id from the same
-// localStorage key ('config.app_id') that our own getAppId() checks — but getAppId()
-// (used for the WebSocket API) ignores non-numeric values here, so this is safe to set
-// without breaking the trading connection. Call this before any requestOidcAuthentication
-// / OAuth2Logout call.
+// Numeric Deriv app IDs registered for custom (non-Deriv) domains.
 //
-// IMPORTANT: @deriv-com/auth-client reads this key via its own LocalStorageUtils.getValue,
-// which does `JSON.parse(localStorage.getItem(key))`. A raw unquoted string fails to
-// parse and silently resolves to null (falling back to the wrong default app_id, which
-// breaks the OAuth redirect back to this domain). The value MUST be JSON-encoded here.
+// HOW TO SET THIS UP (required for login to redirect back to your site):
+// 1. Go to https://api.deriv.com/dashboard → Register application.
+// 2. Set the Redirect URL to: https://<your-domain>/  (e.g. https://elitradingsite.vercel.app/)
+// 3. Copy the NUMERIC App ID it gives you (e.g. 65555) and add it below.
+//    NOTE: alphanumeric strings like '33E5cSHjp6JwZDugdKGGq' are API tokens, NOT app IDs.
+//    Deriv's OAuth server rejects them with "The requested OAuth 2.0 Client does not exist".
+// 4. Alternatively, without redeploying, open your site once with ?app_id=<number>
+//    appended to the URL — it will be saved and used for both login and trading.
+export const custom_domain_app_ids: Record<string, number> = {
+    // 'elitradingsite.vercel.app': 12345,
+};
+
+// Legacy alias kept so stale localStorage values from the old (broken) alphanumeric
+// "OAuth-only app ID" system can be detected and cleaned up.
+const legacy_invalid_oauth_app_ids = ['33E5cSHjp6JwZDugdKGGq', '33y32fFBvxgod1B5Kb9zK', '33yjzVFBvxegoDiBsKb9K'];
+
+// Returns the numeric app ID configured for the current custom domain (either from
+// custom_domain_app_ids above or a previously saved ?app_id= override), if any.
+export const getCustomDomainAppId = (): number | undefined => {
+    const configured = custom_domain_app_ids[window.location.hostname];
+    if (configured) return configured;
+    const stored = window.localStorage.getItem('config.app_id');
+    if (stored && /^\d+$/.test(stored)) return Number(stored);
+    return undefined;
+};
+
+// Deriv's OIDC login (requestOidcAuthentication → oauth.deriv.com/oauth2/auth) only
+// recognises OAuth clients for Deriv-owned domains (dbot.deriv.com etc.). On custom
+// deployments it always fails with "invalid_client", so those domains must use the
+// legacy OAuth flow (oauth.deriv.com/oauth2/authorize?app_id=<numeric>), which redirects
+// back to the Redirect URL registered for that numeric app ID.
+export const shouldUseLegacyOAuthLogin = () => {
+    const hostname = window.location.hostname;
+    return !Object.keys(domain_app_ids).includes(hostname) && !isStaging();
+};
+
+// Cleans up any stale app ID left in localStorage by the old alphanumeric "OAuth-only
+// app ID" system (those values are invalid OAuth clients and break login), and ensures
+// a configured numeric custom-domain app ID is persisted where both our getAppId() and
+// @deriv-com/auth-client (which JSON.parses this key) can read it.
 export const ensureOAuthAppId = () => {
-    const oauth_app_id = domain_oauth_app_ids[window.location.hostname];
-    if (oauth_app_id) {
-        window.localStorage.setItem('config.app_id', JSON.stringify(oauth_app_id));
+    const stored = window.localStorage.getItem('config.app_id');
+    if (stored && legacy_invalid_oauth_app_ids.some(id => stored.includes(id))) {
+        window.localStorage.removeItem('config.app_id');
+    }
+    const numeric_app_id = custom_domain_app_ids[window.location.hostname];
+    if (numeric_app_id) {
+        window.localStorage.setItem('config.app_id', String(numeric_app_id));
     }
 };
 
