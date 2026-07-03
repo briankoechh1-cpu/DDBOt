@@ -52,10 +52,15 @@ export const domain_oauth_app_ids: Record<string, string> = {
 // (used for the WebSocket API) ignores non-numeric values here, so this is safe to set
 // without breaking the trading connection. Call this before any requestOidcAuthentication
 // / OAuth2Logout call.
+//
+// IMPORTANT: @deriv-com/auth-client reads this key via its own LocalStorageUtils.getValue,
+// which does `JSON.parse(localStorage.getItem(key))`. A raw unquoted string fails to
+// parse and silently resolves to null (falling back to the wrong default app_id, which
+// breaks the OAuth redirect back to this domain). The value MUST be JSON-encoded here.
 export const ensureOAuthAppId = () => {
     const oauth_app_id = domain_oauth_app_ids[window.location.hostname];
     if (oauth_app_id) {
-        window.localStorage.setItem('config.app_id', oauth_app_id);
+        window.localStorage.setItem('config.app_id', JSON.stringify(oauth_app_id));
     }
 };
 
